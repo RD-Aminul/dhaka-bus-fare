@@ -1,4 +1,4 @@
-// Comprehensive Bilingual Dictionary (Bangla & English)
+﻿// Comprehensive Bilingual Dictionary (Bangla & English)
 
 export const TRANSLATIONS = {
   bn: {
@@ -77,6 +77,11 @@ export const TRANSLATIONS = {
     // PDF Route Charts Tab
     pdfChartsTitle: "ঢাকা মেট্রো বিআরটিএ চার্টসমূহ (১১৬ পৃষ্ঠার পূর্ণাঙ্গ প্রজ্ঞাপন)",
     pdfChartsSubtitle: "বিআরটিএ যাত্রী ও পণ্য পরিবহন কমিটির অনুমোদিত অফিসিয়াল ভাড়ার চার্ট। যেকোনো রুটে ক্লিক করে স্টপেজ ও সম্পূর্ণ ভাড়ার ছক দেখুন।",
+    chartsSearchPlaceholder: "রুট নম্বর (যেমন: 101, A-101), পেজ (যেমন: 19, page 19) বা এলাকা/স্টপ (যেমন: মিরপুর, সাভার, মতিঝিল) দিয়ে খুঁজুন...",
+    chartsFoundPrefix: "১১৬ টির মধ্যে",
+    chartsFoundSuffix: "টি রুট পাওয়া গেছে",
+    noChartsFound: "কোনো রুট পাওয়া যায়নি। অন্য কোনো রুট নম্বর, পেজ বা এলাকার নাম লিখে চেষ্টা করুন।",
+    clearFilterBtn: "ফিল্টার রিসেট করুন",
     operatingBuses: "চলাচলকারী বাসসমূহ",
     stopsAndDistanceList: "স্টপেজ ও দূরত্ব তালিকা",
     closeBtn: "বন্ধ করুন",
@@ -87,6 +92,11 @@ export const TRANSLATIONS = {
     colStop: "স্টপেজ (Stop)",
     colKm: "কিঃমিঃ",
     matrixFooterRate: "ভাড়ার হার: ২.৭০ টাকা/কিমি • সর্বনিম্ন ভাড়া: ১০.০০ টাকা",
+    matrixFitBtn: "ফিট ভিউ",
+    matrixExpandBtn: "ফুলস্ক্রিন",
+    matrixMinimizeBtn: "ছোট করুন",
+    matrixScrollLeft: "বামে",
+    matrixScrollRight: "ডানে",
     
     // Footer
     footerTitle: "ঢাকা মেট্রো ডিজেল চালিত বাস ভাড়ার চার্ট • বিআরটিএ প্রজ্ঞাপন চার্ট",
@@ -114,7 +124,14 @@ export const TRANSLATIONS = {
     brtaHelplineTitle: "অতিরিক্ত ভাড়া দাবি করলে তাৎক্ষণিক অভিযোগ জানান:",
     recentSearchesTitle: "সাম্প্রতিক সার্চ:",
     clearRecentBtn: "মুছুন",
-    customStopNotice: "কাস্টম স্টপ (দূরত্ব ভিত্তিক প্রজ্ঞাপন ভাড়া)"
+    customStopNotice: "কাস্টম স্টপ (দূরত্ব ভিত্তিক প্রজ্ঞাপন ভাড়া)",
+    // Mobile nav short labels and misc
+    tabSearchShort: "সার্চ",
+    tabCalcShort: "ক্যালকুলেটর",
+    tabBusesShort: "বাস তালিকা",
+    tabChartsShort: "১১৬ চার্ট",
+    helplineModalTitle: "বিআরটিএ যাত্রী সহায়তা ও অভিযোগ হটলাইন",
+    matrixCellClickNote: "যেকোনো ভাড়ায় ক্লিক করলে সার্চে সিলেক্ট হবে"
   },
   
   en: {
@@ -193,6 +210,11 @@ export const TRANSLATIONS = {
     // PDF Route Charts Tab
     pdfChartsTitle: "Dhaka Metro BRTA Charts (Full 116-Page Gazette)",
     pdfChartsSubtitle: "Official fare chart approved by BRTA Passenger & Goods Transport Committee. Click any route to view stops and complete fare matrix.",
+    chartsSearchPlaceholder: "Filter by route code (e.g. 101, A-101), page (e.g. 19, page 19), or location/stop (e.g. Mirpur, Savar, Motijheel)...",
+    chartsFoundPrefix: "Showing",
+    chartsFoundSuffix: "of 116 routes",
+    noChartsFound: "No routes found matching your query. Try another route number, page or location name.",
+    clearFilterBtn: "Reset Filter",
     operatingBuses: "Operating Buses",
     stopsAndDistanceList: "Stops & Distance List",
     closeBtn: "Close",
@@ -203,6 +225,11 @@ export const TRANSLATIONS = {
     colStop: "Stop (স্টপেজ)",
     colKm: "KM",
     matrixFooterRate: "Fare Rate: 2.70 Tk/km • Minimum Fare: 10.00 Tk",
+    matrixFitBtn: "Fit to View",
+    matrixExpandBtn: "Fullscreen",
+    matrixMinimizeBtn: "Exit Fullscreen",
+    matrixScrollLeft: "Scroll Left",
+    matrixScrollRight: "Scroll Right",
     
     // Footer
     footerTitle: "Dhaka Metro Diesel Bus Fare Chart • BRTA Official Gazette Chart",
@@ -230,6 +257,14 @@ export const TRANSLATIONS = {
     brtaHelplineTitle: "Report overcharging immediately to BRTA:",
     recentSearchesTitle: "Recent Searches:",
     clearRecentBtn: "Clear",
-    customStopNotice: "Custom Stop (Distance-Based Gazette Fare)"
+    customStopNotice: "Custom Stop (Distance-Based Gazette Fare)",
+
+    // Mobile nav short labels and misc
+    tabSearchShort: "Search",
+    tabCalcShort: "KM Calc",
+    tabBusesShort: "Buses",
+    tabChartsShort: "116 Charts",
+    helplineModalTitle: "BRTA Passenger Support & Complaint Hotline",
+    matrixCellClickNote: "Click any fare cell to jump to Route Search"
   }
 };

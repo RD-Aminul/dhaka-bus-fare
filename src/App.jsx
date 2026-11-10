@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { 
   Bus, 
   MapPin, 
@@ -12,6 +12,9 @@ import {
   FileText,
   Sliders,
   ChevronRight,
+  ChevronLeft,
+  Maximize2,
+  Minimize2,
   Table,
   Globe,
   Route as RouteIcon,
@@ -20,7 +23,8 @@ import {
   Share2,
   PhoneCall,
   GitFork,
-  Check
+  Check,
+  X
 } from 'lucide-react';
 import { ALL_BRTA_ROUTES } from './data/allRoutesData';
 import { DHAKA_LOCATIONS } from './data/busRoutes';
@@ -31,7 +35,10 @@ import {
   searchRouteAndFare, 
   generateRouteMatrix,
   calculateBrtaFareFromKm, 
-  enToBnNumber 
+  enToBnNumber,
+  bnToEnNumber,
+  normalizeBangla,
+  stopMatches
 } from './utils/fareEngine';
 
 export default function App() {
@@ -66,12 +73,36 @@ export default function App() {
 
   // Show full triangular matrix table modal
   const [showMatrixModal, setShowMatrixModal] = useState(false);
+  const [matrixFullscreen, setMatrixFullscreen] = useState(false);
+  const [matrixCompact, setMatrixCompact] = useState(false);
+  const [matrixRouteId, setMatrixRouteId] = useState(null); // null = use currentRoute (search tab)
+  const matrixScrollRef = useRef(null);
+
+  // The route shown in matrix: from charts tab (matrixRouteId) or search tab (currentRoute)
+  const matrixRoute = useMemo(() => {
+    if (matrixRouteId) return ALL_BRTA_ROUTES.find(r => r.id === matrixRouteId) || currentRoute;
+    return currentRoute;
+  }, [matrixRouteId, currentRoute]);
+
+  const closeMatrix = () => {
+    setShowMatrixModal(false);
+    setMatrixRouteId(null);
+  };
+
+  const scrollMatrix = (offset) => {
+    if (matrixScrollRef.current) {
+      matrixScrollRef.current.scrollBy({ left: offset, behavior: 'smooth' });
+    }
+  };
 
   // Direct KM Calculator tab state
   const [calcKm, setCalcKm] = useState(7.5);
 
   // Bus directory search
   const [busSearchQuery, setBusSearchQuery] = useState('');
+
+  // BRTA Charts tab filter search (Route number, Page number, Location/Stop)
+  const [chartSearchQuery, setChartSearchQuery] = useState('');
 
   // Selected route for chart details in charts tab
   const [selectedRouteDetail, setSelectedRouteDetail] = useState(null);
@@ -135,14 +166,55 @@ export default function App() {
     }));
   }, [currentRoute, lang, t]);
 
-  // Formatted All Dhaka Stops (for unrestricted search)
+  // Formatted All Dhaka Stops (for unrestricted search across all 116 routes)
   const allDhakaStopOptions = useMemo(() => {
-    return DHAKA_LOCATIONS.map(loc => ({
-      value: loc.name,
-      label: loc.name,
-      labelEn: loc.nameEn || getStopEnglishName(loc.name),
-      subText: loc.corridor ? (lang === 'bn' ? `কোরিডোর: ${loc.corridor}` : `Corridor: ${loc.corridor}`) : ''
-    }));
+    const stopMap = new Map();
+
+    // 1. Gather all unique stops across all 116 official BRTA routes
+    ALL_BRTA_ROUTES.forEach(route => {
+      route.stops.forEach(st => {
+        if (!stopMap.has(st.name)) {
+          const en = getStopEnglishName(st.name);
+          stopMap.set(st.name, {
+            value: st.name,
+            label: st.name,
+            labelEn: en !== st.name ? en : '',
+            routesCount: 1
+          });
+        } else {
+          stopMap.get(st.name).routesCount++;
+        }
+      });
+    });
+
+    // 2. Also incorporate any additional points from DHAKA_LOCATIONS
+    DHAKA_LOCATIONS.forEach(loc => {
+      if (stopMap.has(loc.name)) {
+        const item = stopMap.get(loc.name);
+        item.corridor = loc.corridor;
+        if (loc.nameEn) item.labelEn = loc.nameEn;
+      } else {
+        stopMap.set(loc.name, {
+          value: loc.name,
+          label: loc.name,
+          labelEn: loc.nameEn || getStopEnglishName(loc.name),
+          corridor: loc.corridor,
+          routesCount: 0
+        });
+      }
+    });
+
+    // 3. Return cleanly sorted array
+    return Array.from(stopMap.values()).map(item => ({
+      value: item.value,
+      label: item.label,
+      labelEn: item.labelEn,
+      subText: item.corridor
+        ? (lang === 'bn' ? `কোরিডোর: ${item.corridor}` : `Corridor: ${item.corridor}`)
+        : (item.routesCount > 0 
+            ? (lang === 'bn' ? `${fmtNum(item.routesCount)}টি রুটে স্টপেজ` : `${item.routesCount} routes stop here`)
+            : '')
+    })).sort((a, b) => a.label.localeCompare(b.label, 'bn'));
   }, [lang]);
 
   // Handle Route change from searchable DDL
@@ -239,11 +311,11 @@ export default function App() {
     }
   };
 
-  // Full triangular matrix for current route
+  // Full triangular matrix for matrix modal route
   const currentRouteMatrix = useMemo(() => {
-    if (!currentRoute) return [];
-    return generateRouteMatrix(currentRoute);
-  }, [currentRoute]);
+    if (!matrixRoute) return [];
+    return generateRouteMatrix(matrixRoute);
+  }, [matrixRoute]);
 
   // Bus list extraction with routes
   const busesWithRoutes = useMemo(() => {
@@ -270,6 +342,95 @@ export default function App() {
       item.routes.some(r => r.title.toLowerCase().includes(q) || r.routeCode.includes(q))
     );
   }, [busesWithRoutes, busSearchQuery]);
+
+  // Filtered Routes for Charts Tab (By Route number, Page number, or Location/Stop/Via)
+  const filteredChartRoutes = useMemo(() => {
+    if (!chartSearchQuery.trim()) {
+      return [...ALL_BRTA_ROUTES].sort((a, b) => a.pageNo - b.pageNo);
+    }
+    const raw = chartSearchQuery.trim();
+    const q = raw.toLowerCase();
+    const qNormBn = normalizeBangla(raw);
+    const qDigitsEn = bnToEnNumber(raw).replace(/\D/g, '');
+    const isPureDigits = /^[0-9০-৯\s]+$/.test(raw);
+
+    // 1. Explicit Page Search: "page 19", "পেজ ৩৫", "p 14", "p-14"
+    const isExplicitPageSearch = q.startsWith('page') || q.startsWith('পেজ') || q.startsWith('p ') || q.startsWith('p-');
+    if (isExplicitPageSearch && qDigitsEn) {
+      const pageTarget = parseInt(qDigitsEn, 10);
+      return ALL_BRTA_ROUTES.filter(r => r.pageNo === pageTarget).sort((a, b) => a.pageNo - b.pageNo);
+    }
+
+    // 2. Pure Numeric Search (e.g. "35", "৩৫", "101")
+    // If user typed only a number: match exact pageNo OR exact route numeric code (e.g. 101 matches A-101)
+    if (isPureDigits && qDigitsEn) {
+      const num = parseInt(qDigitsEn, 10);
+      return ALL_BRTA_ROUTES.filter(route => {
+        // Exact page match (e.g. page 35)
+        if (route.pageNo === num) return true;
+
+        // Exact route number match (e.g. 'A-101' -> '101' === '101')
+        const routeNum = route.id.replace(/\D/g, '');
+        if (routeNum === qDigitsEn) return true;
+
+        return false;
+      }).sort((a, b) => a.pageNo - b.pageNo);
+    }
+
+    // 3. General Text & Location Search (e.g. "মিরপুর", "Savar", "A-101", "বিকল্প")
+    return ALL_BRTA_ROUTES.filter(route => {
+      // Direct Page Number Match
+      const pageStr = String(route.pageNo);
+      const pageBn = enToBnNumber(route.pageNo);
+      if (pageStr === q || pageBn === q) return true;
+      if (qDigitsEn && pageStr === qDigitsEn) return true;
+
+      // Route Code / ID Match (e.g. A-101, এ-১০১, 101)
+      const routeIdLower = route.id.toLowerCase();
+      const routeCodeNorm = normalizeBangla(route.routeCode);
+      const qClean = q.replace(/[-\s]/g, '');
+      const idClean = routeIdLower.replace(/[-\s]/g, '');
+      if (
+        routeIdLower.includes(q) ||
+        idClean.includes(qClean) ||
+        routeCodeNorm.includes(qNormBn)
+      ) {
+        return true;
+      }
+
+      // Title & Via Location Match
+      const titleNorm = normalizeBangla(route.title);
+      const viaNorm = normalizeBangla(route.via || '');
+      if (
+        titleNorm.includes(qNormBn) ||
+        viaNorm.includes(qNormBn) ||
+        route.title.toLowerCase().includes(q) ||
+        (route.via && route.via.toLowerCase().includes(q))
+      ) {
+        return true;
+      }
+
+      // Stops Location Match (Bengali & English transliteration)
+      const stopMatch = route.stops.some(st => {
+        const stBn = normalizeBangla(st.name);
+        const stEn = getStopEnglishName(st.name).toLowerCase();
+        return (
+          stBn.includes(qNormBn) ||
+          stEn.includes(q) ||
+          stopMatches(st.name, chartSearchQuery)
+        );
+      });
+      if (stopMatch) return true;
+
+      // Operating Bus Match
+      const busMatch = route.buses.some(b => 
+        b.toLowerCase().includes(q) || normalizeBangla(b).includes(qNormBn)
+      );
+      if (busMatch) return true;
+
+      return false;
+    }).sort((a, b) => a.pageNo - b.pageNo);
+  }, [chartSearchQuery]);
 
   // Current active display distance and fare in search result
   const displayDistance = customAdjustedKm !== null 
@@ -1044,33 +1205,120 @@ export default function App() {
                 {t.pdfChartsSubtitle}
               </p>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {ALL_BRTA_ROUTES.map((route) => (
-                  <div
-                    key={route.id}
-                    onClick={() => setSelectedRouteDetail(route)}
-                    className="p-3.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 cursor-pointer transition flex items-center justify-between group"
-                  >
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">
-                          {route.routeCode}
-                        </span>
-                        <span className="text-xs font-bold text-slate-500">
-                          {t.pagePrefix} {fmtNum(route.pageNo)}
-                        </span>
-                      </div>
-                      <div className="text-sm font-semibold text-slate-800 mt-1">
-                        {route.title}
-                      </div>
-                      <div className="text-xs text-slate-500 mt-0.5">
-                        {t.totalDistance} {fmtNum(route.totalKm)} {t.kmUnit} • {t.stopsLabel} {fmtNum(route.stops.length)} {t.itemsCount}
-                      </div>
-                    </div>
-                    <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition shrink-0" />
+              {/* Search / Filter Box for 116 Charts */}
+              <div className="mb-5 bg-slate-50/90 p-3 sm:p-4 rounded-xl border border-slate-200">
+                <div className="relative flex items-center">
+                  <Search className="w-4 h-4 text-emerald-600 absolute left-3.5 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={chartSearchQuery}
+                    onChange={(e) => setChartSearchQuery(e.target.value)}
+                    placeholder={t.chartsSearchPlaceholder}
+                    className="w-full pl-10 pr-10 py-2.5 text-xs sm:text-sm bg-white border border-slate-200 focus:border-emerald-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 shadow-xs transition"
+                  />
+                  {chartSearchQuery && (
+                    <button
+                      type="button"
+                      onClick={() => setChartSearchQuery('')}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1.5 rounded-full bg-slate-200/90 hover:bg-red-50 text-slate-600 hover:text-red-600 border border-slate-300/70 hover:border-red-200 transition cursor-pointer shadow-2xs z-10 flex items-center justify-center active:scale-90"
+                      title={t.clearFilterBtn}
+                      aria-label="Clear search"
+                    >
+                      <X className="w-3.5 h-3.5 stroke-[2.5]" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Filter statistics & Quick Search Chips */}
+                <div className="mt-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+                  <div className="text-slate-500 font-medium flex items-center gap-1.5">
+                    <span className="font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded text-[11px]">
+                      {fmtNum(filteredChartRoutes.length)} {t.itemsCount}
+                    </span>
+                    <span>
+                      {`${t.chartsFoundPrefix} ${fmtNum(filteredChartRoutes.length)} ${t.chartsFoundSuffix}`}
+                    </span>
                   </div>
-                ))}
+
+                  {/* Quick Suggestion Chips */}
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="text-[11px] text-slate-400 font-semibold">{lang === 'en' ? 'Quick:' : 'উদাহরণ:'}</span>
+                    {['Mirpur', 'Savar', 'Farmgate', 'Motijheel', 'Page 19'].map((tag, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setChartSearchQuery(tag)}
+                        className={`text-[11px] px-2 py-0.5 rounded-lg border transition cursor-pointer ${
+                          chartSearchQuery.toLowerCase() === tag.toLowerCase()
+                            ? 'bg-emerald-600 text-white border-emerald-600 font-bold'
+                            : 'bg-white text-slate-600 hover:bg-emerald-50 hover:text-emerald-800 border-slate-200'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                    {chartSearchQuery && (
+                      <button
+                        onClick={() => setChartSearchQuery('')}
+                        className="text-[11px] text-slate-400 hover:text-red-600 font-medium underline cursor-pointer ml-1"
+                      >
+                        {t.clearFilterBtn}
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              {/* Grid of Route Cards */}
+              {filteredChartRoutes.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {filteredChartRoutes.map((route) => (
+                    <div
+                      key={`${route.id}-${route.pageNo}`}
+                      onClick={() => {
+                        setMatrixRouteId(route.id);
+                        setShowMatrixModal(true);
+                      }}
+                      className="p-3.5 rounded-xl border border-slate-200 hover:border-emerald-500 hover:bg-emerald-50/40 cursor-pointer transition flex items-center justify-between group shadow-2xs hover:shadow-sm"
+                    >
+                      <div className="min-w-0 flex-1 pr-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded shrink-0">
+                            {route.routeCode}
+                          </span>
+                          {route.id.includes('-P') && (
+                            <span className="text-[10px] font-bold bg-amber-100 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded shrink-0">
+                              {lang === 'en' ? 'Alt' : 'বিকল্প'}
+                            </span>
+                          )}
+                          <span className="text-xs font-bold text-slate-500 shrink-0">
+                            {t.pagePrefix} {fmtNum(route.pageNo)}
+                          </span>
+                        </div>
+                        <div className="text-sm font-semibold text-slate-800 mt-1 truncate">
+                          {route.title}
+                        </div>
+                        <div className="text-xs text-slate-500 mt-0.5 truncate">
+                          {t.totalDistance} {fmtNum(route.totalKm)} {t.kmUnit} • {t.stopsLabel} {fmtNum(route.stops.length)} {t.itemsCount}
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-600 transition shrink-0" />
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
+                  <FileText className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-700">
+                    {t.noChartsFound}
+                  </p>
+                  <button
+                    onClick={() => setChartSearchQuery('')}
+                    className="mt-3 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl transition cursor-pointer"
+                  >
+                    {t.clearFilterBtn}
+                  </button>
+                </div>
+              )}
             </div>
 
             {/* Modal for viewing route stops */}
@@ -1140,7 +1388,17 @@ export default function App() {
                     </div>
                   </div>
 
-                  <div className="p-3 border-t border-slate-100 bg-slate-50 text-right">
+                  <div className="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between gap-2">
+                    <button
+                      onClick={() => {
+                        setMatrixRouteId(selectedRouteDetail.id);
+                        setShowMatrixModal(true);
+                      }}
+                      className="px-4 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold rounded-xl cursor-pointer flex items-center gap-1.5"
+                    >
+                      <Table className="w-3.5 h-3.5" />
+                      {t.viewFullMatrixLink}
+                    </button>
                     <button
                       onClick={() => setSelectedRouteDetail(null)}
                       className="px-4 py-1.5 bg-slate-700 hover:bg-slate-800 text-white text-xs font-semibold rounded-xl cursor-pointer"
@@ -1158,117 +1416,229 @@ export default function App() {
 
       {/* Triangular Matrix Modal (Exact replicate of PDF Fare Chart Table) */}
       {showMatrixModal && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-2xl">
-            <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-900 text-white">
-              <div>
-                <span className="text-xs font-mono bg-white/20 px-2 py-0.5 rounded">
-                  {currentRoute.routeCode} ({t.pagePrefix} {fmtNum(currentRoute.pageNo)})
-                </span>
-                <h3 className="text-sm sm:text-base font-bold mt-1">
-                  {currentRoute.title} — {t.matrixModalSubtitle}
+        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-2 sm:p-4 z-50">
+          <div className={`bg-white rounded-2xl flex flex-col shadow-2xl transition-all duration-200 overflow-hidden ${
+            matrixFullscreen 
+              ? 'w-[99vw] h-[98vh] max-w-none' 
+              : 'max-w-7xl w-full h-[90vh]'
+          }`}>
+            {/* Modal Header */}
+            <div className="p-3.5 sm:p-4 border-b border-slate-100 flex items-center justify-between bg-emerald-900 text-white shrink-0">
+              <div className="min-w-0 pr-2">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono bg-white/20 px-2 py-0.5 rounded font-bold">
+                    {matrixRoute.routeCode} ({t.pagePrefix} {fmtNum(matrixRoute.pageNo)})
+                  </span>
+                  <span className="text-[11px] text-emerald-200 hidden sm:inline">
+                    {fmtNum(matrixRoute.totalKm)} {t.kmUnit} • {fmtNum(matrixRoute.stops.length)} {t.colStop}
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-base font-bold mt-1 truncate">
+                  {matrixRoute.title} — {t.matrixModalSubtitle}
                 </h3>
+                {matrixRoute.buses && matrixRoute.buses.length > 0 && (
+                  <div className="flex items-center gap-1.5 flex-wrap mt-1.5">
+                    <span className="text-[11px] text-emerald-200/90 font-medium">{t.busesLabel}</span>
+                    {matrixRoute.buses.map((b, bi) => (
+                      <span key={bi} className="bg-emerald-800/90 text-emerald-100 border border-emerald-700/60 text-[10px] px-2 py-0.5 rounded-md font-medium">
+                        {b}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-              <button
-                onClick={() => setShowMatrixModal(false)}
-                className="text-white/80 hover:text-white text-lg font-bold p-1 cursor-pointer"
-              >
-                ✕
-              </button>
+
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => setMatrixFullscreen(!matrixFullscreen)}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
+                  title={matrixFullscreen ? (t.matrixMinimizeBtn || 'Exit Fullscreen') : (t.matrixExpandBtn || 'Fullscreen')}
+                >
+                  {matrixFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
+                </button>
+                <button
+                  onClick={closeMatrix}
+                  className="p-1.5 rounded-lg bg-white/10 hover:bg-red-500/80 text-white transition cursor-pointer ml-1"
+                  title={t.closeBtn}
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
-            <div className="p-4 overflow-auto flex-1">
-              <div className="text-xs text-slate-500 mb-2">
-                {t.matrixModalNote}
+            {/* Quick Controls & Note Bar */}
+            <div className="px-3 sm:px-4 py-2.5 flex flex-wrap items-center justify-between gap-2 shrink-0 bg-slate-50 border-b border-slate-200 text-xs">
+              <div className="text-slate-600 flex items-center gap-1.5 flex-1 min-w-[200px]">
+                <span className="text-[11px] leading-tight text-slate-500">
+                  {t.matrixModalNote}
+                </span>
               </div>
 
-              <div className="overflow-x-auto border border-slate-200 rounded-xl">
-                <table className="min-w-full divide-y divide-slate-200 text-xs">
-                  <thead className="bg-slate-50">
+              <div className="flex items-center gap-1.5 shrink-0">
+                {/* Scroll Left */}
+                <button
+                  onClick={() => scrollMatrix(-240)}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition cursor-pointer flex items-center gap-1 text-[11px] font-semibold active:scale-95 shadow-2xs"
+                  title={t.matrixScrollLeft || 'Scroll Left'}
+                >
+                  <ChevronLeft className="w-3.5 h-3.5" />
+                  <span className="hidden sm:inline">{t.matrixScrollLeft || 'বামে'}</span>
+                </button>
+
+                {/* Scroll Right */}
+                <button
+                  onClick={() => scrollMatrix(240)}
+                  className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 transition cursor-pointer flex items-center gap-1 text-[11px] font-semibold active:scale-95 shadow-2xs"
+                  title={t.matrixScrollRight || 'Scroll Right'}
+                >
+                  <span className="hidden sm:inline">{t.matrixScrollRight || 'ডানে'}</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </button>
+
+                {/* Compact / Fit View Toggle */}
+                <button
+                  onClick={() => setMatrixCompact(!matrixCompact)}
+                  className={`px-2.5 py-1 rounded-lg border transition cursor-pointer text-[11px] font-semibold shadow-2xs ${
+                    matrixCompact
+                      ? 'bg-emerald-600 text-white border-emerald-600'
+                      : 'bg-white text-slate-700 border-slate-300 hover:bg-slate-100'
+                  }`}
+                >
+                  {matrixCompact ? `✓ ${t.matrixFitBtn || 'ফিট ভিউ'}` : (t.matrixFitBtn || 'ফিট ভিউ')}
+                </button>
+              </div>
+            </div>
+
+
+            {/* Matrix Table Direct Scroll Container */}
+            <div className="p-2 sm:p-3 flex-1 min-h-0 flex flex-col overflow-hidden bg-white">
+              <div 
+                ref={matrixScrollRef}
+                className="flex-1 min-h-0 overflow-auto rounded-xl border border-slate-200 shadow-sm"
+              >
+                <table className="border-separate border-spacing-0 w-max text-xs">
+                  <thead className="sticky top-0 z-30">
                     <tr>
-                      <th className="px-2.5 py-2 text-left font-bold text-slate-700 border-r border-slate-200 whitespace-nowrap">
-                        {t.colStop}
+                      {/* Sticky Corner Header */}
+                      <th className="sticky left-0 top-0 z-40 bg-slate-100 border-b-2 border-r-2 border-slate-300 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.12)] whitespace-nowrap min-w-[160px] sm:min-w-[200px]">
+                        <div className="flex items-center justify-between gap-1 px-3 py-2.5">
+                          <span className="font-bold text-slate-700 text-xs">
+                            {lang === 'en' ? 'Stop (ইংলেজ)' : 'স্টপেজ (Stop)'}
+                          </span>
+                          <span className="text-[10px] text-emerald-800 font-mono bg-emerald-100 px-1.5 py-0.5 rounded font-bold">
+                            {t.colKm}
+                          </span>
+                        </div>
                       </th>
-                      <th className="px-2 py-2 text-center font-bold text-slate-700 border-r border-slate-200 whitespace-nowrap">
-                        {t.colKm}
-                      </th>
-                      {currentRoute.stops.map((st, idx) => {
+
+                      {/* Column Headers */}
+                      {matrixRoute.stops.map((st, idx) => {
                         const enName = getStopEnglishName(st.name);
+                        const primary = lang === 'en' ? enName : st.name;
+                        const secondary = lang === 'en' ? st.name : enName;
                         return (
-                          <th key={idx} className="px-2 py-2 text-center font-bold text-slate-700 border-r border-slate-200 whitespace-nowrap">
-                            <div>{lang === 'en' ? enName : st.name}</div>
-                            <div className="text-[10px] text-slate-400 font-normal">
-                              {lang === 'en' ? st.name : enName}
-                            </div>
+                          <th
+                            key={idx}
+                            className={`border-b-2 border-r border-slate-200 text-center bg-slate-100 whitespace-nowrap align-bottom ${
+                              matrixCompact ? 'px-1.5 py-1.5 min-w-[58px]' : 'px-2.5 py-2 min-w-[88px]'
+                            }`}
+                          >
+                            <div className="text-[11px] font-bold text-slate-800 leading-tight">{primary}</div>
+                            <div className="text-[9px] text-emerald-700 font-semibold leading-tight mt-0.5">{secondary}</div>
                           </th>
                         );
                       })}
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-200 bg-white">
-                    {currentRouteMatrix.map((row, rowIdx) => (
-                      <tr key={rowIdx} className="hover:bg-slate-50/80">
-                        <td className="px-2.5 py-2 font-bold text-slate-800 border-r border-slate-200 whitespace-nowrap bg-slate-50/50">
-                          <div>{lang === 'en' ? (row.stopEn || row.stop.name) : row.stop.name}</div>
-                          <div className="text-[10px] text-slate-400 font-normal">
-                            {lang === 'en' ? row.stop.name : row.stopEn}
-                          </div>
-                        </td>
-                        <td className="px-2 py-2 text-center font-mono text-slate-600 border-r border-slate-200 bg-slate-50/50 whitespace-nowrap">
-                          {fmtNum(row.stop.km)}
-                        </td>
-                        {row.fares.map((cell, colIdx) => {
-                          if (cell.isDiagonal) {
+
+                  <tbody className="bg-white">
+                    {currentRouteMatrix.map((row, rowIdx) => {
+                      const rowEnName = row.stopEn || getStopEnglishName(row.stop.name);
+                      const rowPrimary = lang === 'en' ? rowEnName : row.stop.name;
+                      const rowSecondary = lang === 'en' ? row.stop.name : rowEnName;
+                      return (
+                        <tr key={rowIdx} className="hover:bg-emerald-50/30 transition-colors group">
+                          {/* Sticky Left Column */}
+                          <td className="sticky left-0 z-20 bg-white group-hover:bg-emerald-50/60 border-b border-r-2 border-slate-200 shadow-[2px_0_4px_-1px_rgba(0,0,0,0.08)] whitespace-nowrap min-w-[160px] sm:min-w-[200px]">
+                            <div className="flex items-center justify-between gap-2 px-3 py-2">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-xs font-bold text-slate-800 truncate leading-tight">{rowPrimary}</div>
+                                <div className="text-[10px] text-slate-400 font-normal truncate leading-tight mt-0.5">{rowSecondary}</div>
+                              </div>
+                              <span className="font-mono text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded font-semibold shrink-0">
+                                {fmtNum(row.stop.km)}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Fare Cells */}
+                          {row.fares.map((cell, colIdx) => {
+                            if (cell.isDiagonal) {
+                              const diagPrimary = lang === 'en' ? (cell.fromEn || cell.from) : cell.from;
+                              const diagSecondary = lang === 'en' ? cell.from : (cell.fromEn || '');
+                              return (
+                                <td
+                                  key={colIdx}
+                                  className={`text-center bg-emerald-100 border-b border-r border-emerald-200 whitespace-nowrap ${
+                                    matrixCompact ? 'px-1.5 py-1' : 'px-2 py-2'
+                                  }`}
+                                >
+                                  <div className="text-[11px] font-bold text-emerald-900 leading-tight truncate max-w-[80px]">{diagPrimary}</div>
+                                  <div className="text-[9px] text-emerald-700 font-normal leading-tight mt-0.5 truncate max-w-[80px]">{diagSecondary}</div>
+                                </td>
+                              );
+                            }
                             return (
-                              <td key={colIdx} className="px-2 py-2 text-center font-bold bg-emerald-50 text-emerald-800 border-r border-slate-200 whitespace-nowrap">
-                                <div>{lang === 'en' ? (cell.fromEn || cell.from) : cell.from}</div>
-                                <div className="text-[10px] text-emerald-600 font-normal">
-                                  {lang === 'en' ? cell.from : cell.fromEn}
-                                </div>
+                              <td
+                                key={colIdx}
+                                onClick={() => {
+                                  setFromStop(cell.from);
+                                  setToStop(cell.to);
+                                  handleSearch(cell.from, cell.to, matrixRoute.id);
+                                  closeMatrix();
+                                  setActiveTab('search');
+                                }}
+                                className={`text-center font-mono font-semibold text-slate-700 border-b border-r border-slate-100 hover:bg-emerald-500 hover:text-white cursor-pointer transition-colors whitespace-nowrap ${
+                                  matrixCompact ? 'px-2 py-1 text-[11px]' : 'px-3 py-2 text-xs'
+                                }`}
+                                title={`${lang === 'en' ? (cell.fromEn||cell.from) : cell.from} -> ${lang === 'en' ? (cell.toEn||cell.to) : cell.to}: ${t.currency} ${fmtNum(cell.fare)} (${fmtNum(cell.distance)} ${t.kmUnit})`}
+                              >
+                                {fmtNum(cell.fare)}{lang === 'bn' ? '.০০' : '.00'}
                               </td>
                             );
-                          }
-                          return (
-                            <td 
-                              key={colIdx} 
-                              onClick={() => {
-                                setFromStop(cell.from);
-                                setToStop(cell.to);
-                                handleSearch(cell.from, cell.to, currentRoute.id);
-                                setShowMatrixModal(false);
-                              }}
-                              className="px-2 py-2 text-center font-mono font-bold text-slate-800 border-r border-slate-200 hover:bg-emerald-100 cursor-pointer transition whitespace-nowrap"
-                              title={`${cell.from} (${cell.fromEn}) ➔ ${cell.to} (${cell.toEn}): ${t.currency} ${fmtNum(cell.fare)} (${fmtNum(cell.distance)} ${t.kmUnit})`}
-                            >
-                              {fmtNum(cell.fare)}{lang === 'bn' ? '.০০' : '.00'}
-                            </td>
-                          );
-                        })}
-                        {/* Fill the remaining empty cells */}
-                        {Array.from({ length: currentRoute.stops.length - row.fares.length }).map((_, emptyIdx) => (
-                          <td key={emptyIdx} className="bg-slate-50/30 border-r border-slate-200"></td>
-                        ))}
-                      </tr>
-                    ))}
+                          })}
+
+                          {/* Empty upper-triangle cells */}
+                          {Array.from({ length: matrixRoute.stops.length - row.fares.length }).map((_, emptyIdx) => (
+                            <td key={emptyIdx} className="bg-slate-50/60 border-b border-r border-slate-100"></td>
+                          ))}
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
             </div>
 
-            <div className="p-3 border-t border-slate-100 bg-slate-50 flex items-center justify-between text-xs text-slate-500">
-              <div>
-                {t.matrixFooterRate}
+            {/* Modal Footer */}
+            <div className="px-4 py-2.5 border-t border-slate-200 bg-slate-50 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 shrink-0">
+              <span className="font-semibold text-slate-700">{t.matrixFooterRate}</span>
+              <div className="flex items-center gap-2">
+                <span className="text-[11px] text-slate-400 hidden sm:inline">
+                  {lang === 'bn' ? 'যেকোনো ভাড়ায় ক্লিক করলে সার্চে সিলেক্ট হবে' : 'Click any fare cell to jump to Route Search'}
+                </span>
+                <button
+                  onClick={closeMatrix}
+                  className="px-4 py-1.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-900 transition cursor-pointer"
+                >
+                  {t.closeBtn}
+                </button>
               </div>
-              <button
-                onClick={() => setShowMatrixModal(false)}
-                className="px-4 py-1.5 bg-slate-800 text-white rounded-xl font-semibold hover:bg-slate-900 cursor-pointer"
-              >
-                {t.closeBtn}
-              </button>
             </div>
           </div>
         </div>
       )}
+
 
       {/* BRTA Helpline & Overcharge Complaint Modal */}
       {showHelplineModal && (
@@ -1339,7 +1709,7 @@ export default function App() {
           }`}
         >
           <Search className="w-4 h-4 mb-0.5" />
-          <span>{lang === 'en' ? 'Search' : 'সার্চ'}</span>
+          <span>{t.tabSearchShort || (lang === 'en' ? 'Search' : 'সার্চ')}</span>
         </button>
         <button
           onClick={() => setActiveTab('calculator')}
@@ -1348,7 +1718,7 @@ export default function App() {
           }`}
         >
           <Calculator className="w-4 h-4 mb-0.5" />
-          <span>{lang === 'en' ? 'KM Calc' : 'ক্যালকুলেটর'}</span>
+          <span>{t.tabCalcShort || (lang === 'en' ? 'KM Calc' : 'ক্যালকুলেটর')}</span>
         </button>
         <button
           onClick={() => setActiveTab('buses')}
@@ -1357,7 +1727,7 @@ export default function App() {
           }`}
         >
           <Bus className="w-4 h-4 mb-0.5" />
-          <span>{lang === 'en' ? 'Buses' : 'বাস তালিকা'}</span>
+          <span>{t.tabBusesShort || (lang === 'en' ? 'Buses' : 'বাস তালিকা')}</span>
         </button>
         <button
           onClick={() => setActiveTab('charts')}
@@ -1366,7 +1736,7 @@ export default function App() {
           }`}
         >
           <FileText className="w-4 h-4 mb-0.5" />
-          <span>{lang === 'en' ? '116 Charts' : '১১৬ চার্ট'}</span>
+          <span>{t.tabChartsShort || (lang === 'en' ? '116 Charts' : '১১৬ চার্ট')}</span>
         </button>
       </div>
 
