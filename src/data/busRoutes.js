@@ -1,0 +1,532 @@
+// Dhaka Bus Routes, Stops, Official BRTA Fare Chart Data & Dhaka Geo-Matrix
+
+export const BRTA_RATE_PER_KM = 2.70;
+export const BRTA_MIN_FARE = 10.0;
+
+// Master List of Dhaka Locations/Stops with approximate road network coordinates & corridor tags
+export const DHAKA_LOCATIONS = [
+  // Mirpur - Agargaon - Rokeya Sarani Corridor
+  { id: "kalshi", name: "কালশী", nameEn: "Kalshi", lat: 23.8242, lng: 90.3775, corridor: "mirpur" },
+  { id: "mirpur_12", name: "মিরপুর-১২", nameEn: "Mirpur 12", lat: 23.8282, lng: 90.3644, corridor: "mirpur" },
+  { id: "mirpur_11_5", name: "মিরপুর সাড়ে ১১ (পূরবী)", nameEn: "Mirpur 11.5", lat: 23.8205, lng: 90.3662, corridor: "mirpur" },
+  { id: "mirpur_11", name: "মিরপুর-১১", nameEn: "Mirpur 11", lat: 23.8160, lng: 90.3670, corridor: "mirpur" },
+  { id: "duaripara", name: "দুয়ারীপাড়া", nameEn: "Duaripara", lat: 23.8260, lng: 90.3550, corridor: "mirpur" },
+  { id: "mirpur_10", name: "মিরপুর-১০", nameEn: "Mirpur 10", lat: 23.8069, lng: 90.3687, corridor: "mirpur" },
+  { id: "mirpur_14", name: "মিরপুর-১৪", nameEn: "Mirpur 14", lat: 23.8120, lng: 90.3850, corridor: "mirpur" },
+  { id: "mirpur_2", name: "মিরপুর-২", nameEn: "Mirpur 2", lat: 23.8040, lng: 90.3600, corridor: "mirpur" },
+  { id: "mirpur_1", name: "মিরপুর-১", nameEn: "Mirpur 1", lat: 23.7956, lng: 90.3537, corridor: "mirpur" },
+  { id: "mazar_road", name: "মাজার রোড", nameEn: "Mazar Road", lat: 23.7990, lng: 90.3450, corridor: "mirpur" },
+  { id: "chiriakhana", name: "চিড়িয়াখানা (মিরপুর)", nameEn: "Mirpur Zoo", lat: 23.8115, lng: 90.3475, corridor: "mirpur" },
+  { id: "kazipara", name: "কাজীপাড়া", nameEn: "Kazipara", lat: 23.7977, lng: 90.3725, corridor: "rokeya_sarani" },
+  { id: "shewrapara", name: "শেওড়াপাড়া", nameEn: "Shewrapara", lat: 23.7898, lng: 90.3752, corridor: "rokeya_sarani" },
+  { id: "taltola", name: "তালতলা", nameEn: "Taltola", lat: 23.7820, lng: 90.3765, corridor: "rokeya_sarani" },
+  { id: "agargaon", name: "আগারগাঁও", nameEn: "Agargaon", lat: 23.7770, lng: 90.3780, corridor: "rokeya_sarani" },
+  { id: "ecb_chattar", name: "ইসিবি চত্বর (মানিকদি)", nameEn: "ECB Chattar", lat: 23.8248, lng: 90.3920, corridor: "cantonment" },
+
+  // Gabtoli - Shamoli - Asadgate Corridor
+  { id: "gabtoli", name: "গাবতলী", nameEn: "Gabtoli", lat: 23.7850, lng: 90.3420, corridor: "mirpur_road" },
+  { id: "technical", name: "টেকনিক্যাল", nameEn: "Technical", lat: 23.7810, lng: 90.3530, corridor: "mirpur_road" },
+  { id: "kallyanpur", name: "কল্যাণপুর", nameEn: "Kallyanpur", lat: 23.7780, lng: 90.3620, corridor: "mirpur_road" },
+  { id: "shyamoli", name: "শ্যামলী", nameEn: "Shyamoli", lat: 23.7710, lng: 90.3650, corridor: "mirpur_road" },
+  { id: "shishumela", name: "শিশুমেলা", nameEn: "Shishumela", lat: 23.7700, lng: 90.3680, corridor: "mirpur_road" },
+  { id: "college_gate", name: "কলেজগেট", nameEn: "College Gate", lat: 23.7650, lng: 90.3700, corridor: "mirpur_road" },
+  { id: "asadgate", name: "আসাদগেট", nameEn: "Asad Gate", lat: 23.7600, lng: 90.3725, corridor: "mirpur_road" },
+  { id: "bijoy_sarani", name: "বিজয় সরণী", nameEn: "Bijoy Sarani", lat: 23.7655, lng: 90.3845, corridor: "vip_road" },
+  { id: "khamarbari", name: "খামারবাড়ি", nameEn: "Khamarbari", lat: 23.7580, lng: 90.3830, corridor: "vip_road" },
+  { id: "farmgate", name: "ফার্মগেট", nameEn: "Farmgate", lat: 23.7565, lng: 90.3872, corridor: "vip_road" },
+  { id: "kawran_bazar", name: "কাওরান বাজার", nameEn: "Kawran Bazar", lat: 23.7515, lng: 90.3930, corridor: "vip_road" },
+  { id: "banglamotor", name: "বাংলামোটর", nameEn: "Banglamotor", lat: 23.7460, lng: 90.3945, corridor: "vip_road" },
+  { id: "shahbagh", name: "শাহবাগ", nameEn: "Shahbagh", lat: 23.7389, lng: 90.3957, corridor: "vip_road" },
+  { id: "matsyabhaban", name: "মৎস্যভবন", nameEn: "Matsya Bhaban", lat: 23.7330, lng: 90.4020, corridor: "vip_road" },
+  { id: "press_club", name: "প্রেসক্লাব", nameEn: "Press Club", lat: 23.7290, lng: 90.4065, corridor: "downtown" },
+  { id: "paltan", name: "পল্টন", nameEn: "Paltan", lat: 23.7315, lng: 90.4120, corridor: "downtown" },
+  { id: "gulisthan", name: "গুলিস্তান", nameEn: "Gulisthan", lat: 23.7245, lng: 90.4125, corridor: "downtown" },
+  { id: "motijheel", name: "মতিঝিল", nameEn: "Motijheel", lat: 23.7310, lng: 90.4190, corridor: "downtown" },
+  { id: "shapla_chattar", name: "শাপলা চত্বর", nameEn: "Shapla Chattar", lat: 23.7290, lng: 90.4210, corridor: "downtown" },
+  { id: "kamalapur", name: "কমলাপুর", nameEn: "Kamalapur", lat: 23.7335, lng: 90.4260, corridor: "downtown" },
+
+  // Dhanmondi - Mohammadpur - Science Lab - Azimpur
+  { id: "mohammadpur", name: "মোহাম্মদপুর", nameEn: "Mohammadpur", lat: 23.7560, lng: 90.3600, corridor: "mohammadpur" },
+  { id: "town_hall", name: "টাউন হল", nameEn: "Town Hall", lat: 23.7580, lng: 90.3640, corridor: "mohammadpur" },
+  { id: "shia_mosque", name: "মোহাম্মদপুর শিয়া মসজিদ", nameEn: "Shia Mosque", lat: 23.7660, lng: 90.3560, corridor: "mohammadpur" },
+  { id: "japan_garden", name: "জাপান গার্ডেন সিটি", nameEn: "Japan Garden City", lat: 23.7680, lng: 90.3540, corridor: "mohammadpur" },
+  { id: "bosila", name: "বসিলা", nameEn: "Bosila", lat: 23.7480, lng: 90.3400, corridor: "mohammadpur" },
+  { id: "shankar", name: "শঙ্কর", nameEn: "Shankar", lat: 23.7490, lng: 90.3660, corridor: "dhanmondi" },
+  { id: "dhanmondi_15", name: "ধানমন্ডি-১৫", nameEn: "Dhanmondi 15", lat: 23.7470, lng: 90.3720, corridor: "dhanmondi" },
+  { id: "jigatola", name: "জিগাতলা", nameEn: "Jigatola", lat: 23.7430, lng: 90.3750, corridor: "dhanmondi" },
+  { id: "shukrabad", name: "শুক্রাবাদ", nameEn: "Shukrabad", lat: 23.7530, lng: 90.3780, corridor: "mirpur_road" },
+  { id: "sobanbagh", name: "সোবহানবাগ", nameEn: "Sobhanbagh", lat: 23.7510, lng: 90.3785, corridor: "mirpur_road" },
+  { id: "kalabagan", name: "কলাবাগান", nameEn: "Kalabagan", lat: 23.7480, lng: 90.3800, corridor: "mirpur_road" },
+  { id: "russel_square", name: "রাসেল স্কয়ার", nameEn: "Russel Square", lat: 23.7525, lng: 90.3795, corridor: "mirpur_road" },
+  { id: "science_lab", name: "সায়েন্সল্যাব", nameEn: "Science Lab", lat: 23.7410, lng: 90.3830, corridor: "mirpur_road" },
+  { id: "city_college", name: "ঢাকা সিটি কলেজ", nameEn: "City College", lat: 23.7405, lng: 90.3835, corridor: "mirpur_road" },
+  { id: "dhaka_college", name: "ঢাকা কলেজ", nameEn: "Dhaka College", lat: 23.7380, lng: 90.3845, corridor: "mirpur_road" },
+  { id: "new_market", name: "নিউমার্কেট", nameEn: "New Market", lat: 23.7340, lng: 90.3855, corridor: "mirpur_road" },
+  { id: "nilkhet", name: "নীলক্ষেত", nameEn: "Nilkhet", lat: 23.7320, lng: 90.3880, corridor: "mirpur_road" },
+  { id: "azimpur", name: "আজিমপুর", nameEn: "Azimpur", lat: 23.7280, lng: 90.3860, corridor: "old_dhaka" },
+  { id: "palashi", name: "পলাশী", nameEn: "Palashi", lat: 23.7275, lng: 90.3910, corridor: "old_dhaka" },
+  { id: "dhakeshwari", name: "ঢাকেশ্বরী মন্দির", nameEn: "Dhakeshwari", lat: 23.7225, lng: 90.3890, corridor: "old_dhaka" },
+  { id: "chankharpul", name: "চাঁনখারপুল", nameEn: "Chankharpul", lat: 23.7230, lng: 90.3990, corridor: "old_dhaka" },
+
+  // Airport - Uttara - Gazipur Corridor
+  { id: "uttara_house_building", name: "উত্তরা হাউজ বিল্ডিং", nameEn: "House Building", lat: 23.8740, lng: 90.3980, corridor: "uttara" },
+  { id: "azampur", name: "আজমপুর (উত্তরা)", nameEn: "Azampur", lat: 23.8670, lng: 90.4005, corridor: "uttara" },
+  { id: "rajlakshmi", name: "রাজলক্ষ্মী (উত্তরা)", nameEn: "Rajlakshmi", lat: 23.8630, lng: 90.4010, corridor: "uttara" },
+  { id: "jasimuddin", name: "জসীমউদ্দীন মোড়", nameEn: "Jasimuddin", lat: 23.8560, lng: 90.4020, corridor: "uttara" },
+  { id: "airport", name: "বিমানবন্দর (এয়ারপোর্ট)", nameEn: "Airport", lat: 23.8475, lng: 90.4050, corridor: "uttara" },
+  { id: "khilkhet", name: "খিলক্ষেত", nameEn: "Khilkhet", lat: 23.8320, lng: 90.4170, corridor: "airport_road" },
+  { id: "kuril", name: "কুড়িল বিশ্বরোড", nameEn: "Kuril Bishwa Road", lat: 23.8180, lng: 90.4210, corridor: "airport_road" },
+  { id: "radisson", name: "রেডিসন / শেওড়া", nameEn: "Shewra / Radisson", lat: 23.8210, lng: 90.4130, corridor: "airport_road" },
+  { id: "banani", name: "বনানী", nameEn: "Banani", lat: 23.7937, lng: 90.4040, corridor: "airport_road" },
+  { id: "kakoli", name: "কাকলী", nameEn: "Kakoli", lat: 23.7970, lng: 90.4025, corridor: "airport_road" },
+  { id: "mohakhali", name: "মহাখালী", nameEn: "Mohakhali", lat: 23.7778, lng: 90.4015, corridor: "airport_road" },
+  { id: "titumir_college", name: "তিতুমীর কলেজ", nameEn: "Titumir College", lat: 23.7790, lng: 90.4080, corridor: "mohakhali" },
+  { id: "nabisco", name: "নাবিস্কো", nameEn: "Nabisco", lat: 23.7680, lng: 90.4030, corridor: "tejgaon" },
+  { id: "satrasta", name: "সাতরাস্তা", nameEn: "Satrasta", lat: 23.7600, lng: 90.4010, corridor: "tejgaon" },
+  { id: "mogbazar", name: "মগবাজার", nameEn: "Mogbazar", lat: 23.7510, lng: 90.4060, corridor: "downtown" },
+  { id: "mouchak", name: "মৌচাক", nameEn: "Mouchak", lat: 23.7450, lng: 90.4130, corridor: "downtown" },
+  { id: "malibagh", name: "মালিবাগ", nameEn: "Malibagh", lat: 23.7470, lng: 90.4170, corridor: "downtown" },
+  { id: "kakrail", name: "কাকরাইল", nameEn: "Kakrail", lat: 23.7380, lng: 90.4100, corridor: "downtown" },
+  { id: "shantinagar", name: "শান্তিনগর", nameEn: "Shantinagar", lat: 23.7400, lng: 90.4140, corridor: "downtown" },
+  { id: "tongi", name: "টঙ্গী", nameEn: "Tongi", lat: 23.8950, lng: 90.4030, corridor: "gazipur" },
+  { id: "board_bazar", name: "বোর্ড বাজার", nameEn: "Board Bazar", lat: 23.9450, lng: 90.3920, corridor: "gazipur" },
+  { id: "gazipur_chowrasta", name: "গাজীপুর চৌরাস্তা", nameEn: "Gazipur Chowrasta", lat: 23.9980, lng: 90.3800, corridor: "gazipur" },
+  { id: "gazipur", name: "গাজীপুর", nameEn: "Gazipur", lat: 24.0020, lng: 90.4200, corridor: "gazipur" },
+
+  // Pragati Sarani - Badda - Rampura - Sayedabad
+  { id: "notun_bazar", name: "নতুন বাজার", nameEn: "Notun Bazar", lat: 23.7985, lng: 90.4230, corridor: "pragati_sarani" },
+  { id: "badda", name: "বাড্ডা (উত্তর/মধ্য)", nameEn: "Badda", lat: 23.7820, lng: 90.4250, corridor: "pragati_sarani" },
+  { id: "rampura", name: "রামপুরা", nameEn: "Rampura", lat: 23.7620, lng: 90.4240, corridor: "pragati_sarani" },
+  { id: "bonosree", name: "বনশ্রী", nameEn: "Bonosree", lat: 23.7580, lng: 90.4320, corridor: "khilgaon" },
+  { id: "khilgaon", name: "খিলগাঁও", nameEn: "Khilgaon", lat: 23.7490, lng: 90.4260, corridor: "khilgaon" },
+  { id: "basabo", name: "বাসাবো", nameEn: "Basabo", lat: 23.7390, lng: 90.4320, corridor: "khilgaon" },
+  { id: "sayedabad", name: "সায়েদাবাদ", nameEn: "Sayedabad", lat: 23.7190, lng: 90.4260, corridor: "jatrabari" },
+  { id: "jatrabari", name: "যাত্রাবাড়ী", nameEn: "Jatrabari", lat: 23.7120, lng: 90.4330, corridor: "jatrabari" },
+  { id: "shanir_akhra", name: "শনির আখড়া", nameEn: "Shanir Akhra", lat: 23.7020, lng: 90.4480, corridor: "signboard" },
+  { id: "signboard", name: "সাইনবোর্ড", nameEn: "Signboard", lat: 23.6850, lng: 90.4720, corridor: "signboard" },
+  { id: "kachpur", name: "কাঁচপুর ব্রিজ", nameEn: "Kachpur Bridge", lat: 23.6940, lng: 90.5180, corridor: "highway" },
+  { id: "narayanganj", name: "নারায়ণগঞ্জ (চাষাড়া)", nameEn: "Narayanganj", lat: 23.6230, lng: 90.5010, corridor: "narayanganj" },
+
+  // Savar - Dhamrai - Ashulia - Chandra Highway
+  { id: "hemayetpur", name: "হেমায়েতপুর", nameEn: "Hemayetpur", lat: 23.7920, lng: 90.2740, corridor: "savar" },
+  { id: "savar", name: "সাভার", nameEn: "Savar", lat: 23.8450, lng: 90.2580, corridor: "savar" },
+  { id: "navinagar", name: "নবীনগর (সাভার)", nameEn: "Navinagar", lat: 23.9120, lng: 90.2640, corridor: "savar" },
+  { id: "epz", name: "ইপিজেড (সাভার)", nameEn: "EPZ Savar", lat: 23.9450, lng: 90.2750, corridor: "savar" },
+  { id: "baipail", name: "বাইপাইল", nameEn: "Baipail", lat: 23.9550, lng: 90.2880, corridor: "savar" },
+  { id: "zirani", name: "জিরানী", nameEn: "Zirani", lat: 23.9820, lng: 90.2920, corridor: "savar" },
+  { id: "nandan_park", name: "নন্দন পার্ক", nameEn: "Nandan Park", lat: 24.0150, lng: 90.2850, corridor: "savar" },
+  { id: "chandra", name: "চন্দ্রা", nameEn: "Chandra", lat: 24.0450, lng: 90.2780, corridor: "savar" },
+  { id: "dhamrai", name: "ধামরাই", nameEn: "Dhamrai", lat: 23.9180, lng: 90.2100, corridor: "highway" },
+
+  // Old Dhaka & Sadarghat
+  { id: "sadarghat", name: "সদরঘাট (ভিক্টোরিয়া পার্ক)", nameEn: "Sadarghat", lat: 23.7080, lng: 90.4100, corridor: "old_dhaka" },
+  { id: "ray_saheb_bazar", name: "রায় সাহেব বাজার", nameEn: "Ray Saheb Bazar", lat: 23.7120, lng: 90.4080, corridor: "old_dhaka" },
+  { id: "babu_bazar", name: "বাবু বাজার ব্রিজ", nameEn: "Babu Bazar Bridge", lat: 23.7130, lng: 90.4010, corridor: "old_dhaka" },
+  { id: "postogola", name: "পোস্তগোলা", nameEn: "Postogola", lat: 23.6930, lng: 90.4280, corridor: "old_dhaka" },
+  { id: "keraniganj", name: "কেরানীগঞ্জ", nameEn: "Keraniganj", lat: 23.6980, lng: 90.3950, corridor: "keraniganj" }
+];
+
+// Rich Route Catalog from the PDF with verified BRTA charts & Popular Bus Operators
+export const BUS_ROUTES_CATALOG = [
+  {
+    id: "A-101",
+    pageNo: 1,
+    routeCode: "এ-১০১",
+    title: "কালশী (মিরপুর-১২) হতে কাঁচপুর ব্রিজ",
+    via: "মিরপুর-১০, ফার্মগেট, শাহবাগ, পল্টন, গুলিস্তান, সায়েদাবাদ, যাত্রাবাড়ী, সাইনবোর্ড",
+    totalKm: 28.8,
+    buses: ["বসুমতি পরিবহন", "প্রজাপতি পরিবহন", "রাইদা স্পেশাল"],
+    stops: [
+      { name: "কালশী", km: 0.0 },
+      { name: "মিরপুর-১২", km: 2.2 },
+      { name: "মিরপুর-১০", km: 4.7 },
+      { name: "কাজীপাড়া", km: 6.1 },
+      { name: "শেওড়াপাড়া", km: 6.8 },
+      { name: "ফার্মগেট", km: 11.4 },
+      { name: "শাহবাগ", km: 13.7 },
+      { name: "পল্টন", km: 15.6 },
+      { name: "গুলিস্তান", km: 16.6 },
+      { name: "টিকাটুলি", km: 17.8 },
+      { name: "সায়েদাবাদ", km: 19.9 },
+      { name: "যাত্রাবাড়ী", km: 19.9 },
+      { name: "সাইনবোর্ড", km: 24.8 },
+      { name: "কাঁচপুর ব্রিজ", km: 28.8 }
+    ],
+    fareTable: {
+      "কালশী-মিরপুর-১২": 10, "কালশী-মিরপুর-১০": 13, "কালশী-কাজীপাড়া": 16, "কালশী-শেওড়াপাড়া": 18,
+      "কালশী-ফার্মগেট": 31, "কালশী-শাহবাগ": 37, "কালশী-পল্টন": 42, "কালশী-গুলিস্তান": 45,
+      "কালশী-টিকাটুলি": 48, "কালশী-সায়েদাবাদ": 54, "কালশী-যাত্রাবাড়ী": 54, "কালশী-সাইনবোর্ড": 67,
+      "কালশী-কাঁচপুর ব্রিজ": 78, "মিরপুর-১২-মিরপুর-১০": 10, "মিরপুর-১২-ফার্মগেট": 25,
+      "মিরপুর-১২-শাহবাগ": 31, "মিরপুর-১২-পল্টন": 36, "মিরপুর-১২-গুলিস্তান": 39, "মিরপুর-১২-সায়েদাবাদ": 48,
+      "মিরপুর-১২-যাত্রাবাড়ী": 48, "মিরপুর-১২-কাঁচপুর ব্রিজ": 72, "মিরপুর-১০-ফার্মগেট": 18,
+      "মিরপুর-১০-শাহবাগ": 24, "মিরপুর-১০-পল্টন": 29, "মিরপুর-১০-গুলিস্তান": 32, "মিরপুর-১০-যাত্রাবাড়ী": 41,
+      "মিরপুর-১০-কাঁচপুর ব্রিজ": 65, "ফার্মগেট-শাহবাগ": 12, "ফার্মগেট-গুলিস্তান": 14,
+      "ফার্মগেট-যাত্রাবাড়ী": 23, "ফার্মগেট-কাঁচপুর ব্রিজ": 47, "শাহবাগ-গুলিস্তান": 10,
+      "শাহবাগ-যাত্রাবাড়ী": 17, "শাহবাগ-কাঁচপুর ব্রিজ": 41, "গুলিস্তান-যাত্রাবাড়ী": 10,
+      "গুলিস্তান-কাঁচপুর ব্রিজ": 33, "যাত্রাবাড়ী-কাঁচপুর ব্রিজ": 24, "সাইনবোর্ড-কাঁচপুর ব্রিজ": 11
+    }
+  },
+  {
+    id: "A-102",
+    pageNo: 2,
+    routeCode: "এ-১০২",
+    title: "পল্লবী হতে সদরঘাট (ভিক্টোরিয়া পার্ক)",
+    via: "মিরপুর-১১, মিরপুর-১০, কাজীপাড়া, ফার্মগেট, প্রেসক্লাব, টিএসসি, রায় সাহেব বাজার",
+    totalKm: 16.9,
+    buses: ["শিকড় পরিবহন", "দিশারী পরিবহন", "বিহঙ্গ পরিবহন"],
+    stops: [
+      { name: "পল্লবী (মিরপুর-১২)", km: 0.0 },
+      { name: "মিরপুর-১১ ১/২", km: 0.4 },
+      { name: "বৈকালী হোটেল", km: 0.7 },
+      { name: "মিরপুর-১১", km: 1.4 },
+      { name: "মিরপুর-১০", km: 2.3 },
+      { name: "কাজীপাড়া", km: 3.7 },
+      { name: "ফার্মগেট", km: 9.0 },
+      { name: "প্রেসক্লাব", km: 13.2 },
+      { name: "টিএসসি", km: 14.7 },
+      { name: "রায় সাহেব বাজার", km: 15.7 },
+      { name: "ভিক্টোরিয়া পার্ক", km: 16.9 }
+    ],
+    fareTable: {
+      "পল্লবী (মিরপুর-১২)-মিরপুর-১০": 10, "পল্লবী (মিরপুর-১২)-ফার্মগেট": 24, "পল্লবী (মিরপুর-১২)-প্রেসক্লাব": 36,
+      "পল্লবী (মিরপুর-১২)-টিএসসি": 40, "পল্লবী (মিরপুর-১২)-ভিক্টোরিয়া পার্ক": 46, "মিরপুর-১০-ফার্মগেট": 18,
+      "মিরপুর-১০-প্রেসক্লাব": 30, "মিরপুর-১০-টিএসসি": 33, "মিরপুর-১০-ভিক্টোরিয়া পার্ক": 39,
+      "ফার্মগেট-প্রেসক্লাব": 12, "ফার্মগেট-টিএসসি": 15, "ফার্মগেট-ভিক্টোরিয়া পার্ক": 21,
+      "প্রেসক্লাব-ভিক্টোরিয়া পার্ক": 10
+    }
+  },
+  {
+    id: "A-105",
+    pageNo: 3,
+    routeCode: "এ-১০৫",
+    title: "পল্লবী (দুয়ারীপাড়া) হতে ঢাকেশ্বরী",
+    via: "মিরপুর-১২, মিরপুর-১০, কাজীপাড়া, শেওড়াপাড়া, আগারগাঁও, ধানমন্ডি, শুক্রাবাদ",
+    totalKm: 15.1,
+    buses: ["বিহঙ্গ পরিবহন", "পল্লবী সুপার সার্ভিস"],
+    stops: [
+      { name: "দুয়ারীপাড়া", km: 0.0 },
+      { name: "মিরপুর-১২", km: 0.9 },
+      { name: "মিরপুর সাড়ে ১১", km: 1.3 },
+      { name: "মিরপুর-১১", km: 2.3 },
+      { name: "মিরপুর-১০", km: 3.2 },
+      { name: "কাজীপাড়া", km: 4.6 },
+      { name: "শেওড়াপাড়া", km: 5.3 },
+      { name: "আগারগাঁও", km: 7.0 },
+      { name: "ধানমন্ডি", km: 10.6 },
+      { name: "শুক্রাবাদ", km: 11.1 },
+      { name: "ঢাকেশ্বরী মন্দির", km: 15.1 }
+    ],
+    fareTable: {
+      "দুয়ারীপাড়া-মিরপুর-১০": 10, "দুয়ারীপাড়া-শেওড়াপাড়া": 14, "দুয়ারীপাড়া-আগারগাঁও": 19,
+      "দুয়ারীপাড়া-ধানমন্ডি": 29, "দুয়ারীপাড়া-শুক্রাবাদ": 30, "দুয়ারীপাড়া-ঢাকেশ্বরী মন্দির": 41,
+      "মিরপুর-১০-আগারগাঁও": 10, "মিরপুর-১০-ধানমন্ডি": 20, "মিরপুর-১০-ঢাকেশ্বরী মন্দির": 32,
+      "আগারগাঁও-ধানমন্ডি": 10, "আগারগাঁও-ঢাকেশ্বরী মন্দির": 22, "ধানমন্ডি-ঢাকেশ্বরী মন্দির": 12
+    }
+  },
+  {
+    id: "A-110",
+    pageNo: 4,
+    routeCode: "এ-১১০",
+    title: "দুয়ারীপাড়া হতে ঢাকেশ্বরী / গুলিস্তান",
+    via: "মিরপুর থানা, মিরপুর-১, টেকনিক্যাল, আসাদগেট, সায়েন্সল্যাব, বুয়েট, গুলিস্তান",
+    totalKm: 16.7,
+    buses: ["দেওয়ান পরিবহন", "বিহঙ্গ এক্সপ্রেস"],
+    stops: [
+      { name: "দুয়ারীপাড়া", km: 0.0 },
+      { name: "মিরপুর থানা", km: 2.4 },
+      { name: "মিরপুর-১", km: 3.7 },
+      { name: "আনসারক্যাম্প", km: 4.6 },
+      { name: "টেকনিক্যাল", km: 5.5 },
+      { name: "আসাদগেট", km: 9.1 },
+      { name: "সায়েন্সল্যাব", km: 11.8 },
+      { name: "বুয়েট", km: 14.9 },
+      { name: "গুলিস্তান", km: 16.7 }
+    ],
+    fareTable: {
+      "দুয়ারীপাড়া-মিরপুর-১": 10, "দুয়ারীপাড়া-আসাদগেট": 25, "দুয়ারীপাড়া-সায়েন্সল্যাব": 32,
+      "দুয়ারীপাড়া-বুয়েট": 40, "দুয়ারীপাড়া-গুলিস্তান": 45, "মিরপুর-১-আসাদগেট": 15,
+      "মিরপুর-১-সায়েন্সল্যাব": 22, "মিরপুর-১-গুলিস্তান": 35, "আসাদগেট-সায়েন্সল্যাব": 10,
+      "আসাদগেট-গুলিস্তান": 21, "সায়েন্সল্যাব-গুলিস্তান": 13
+    }
+  },
+  {
+    id: "A-114",
+    pageNo: 6,
+    routeCode: "এ-১১৪",
+    title: "মিরপুর (চিড়িয়াখানা) হতে সায়েদাবাদ",
+    via: "মিরপুর-১, কল্যাণপুর, শ্যামলী, আসাদগেট, ফার্মগেট, শাহবাগ, প্রেসক্লাব, ইত্তেফাক",
+    totalKm: 18.3,
+    buses: ["তানজিল পরিবহন", "দিশারী পরিবহন", "মিরপুর ট্রান্সপোর্ট"],
+    stops: [
+      { name: "চিড়িয়াখানা", km: 0.0 },
+      { name: "মিরপুর-১", km: 1.8 },
+      { name: "আনসারক্যাম্প", km: 2.7 },
+      { name: "দারুসসালাম", km: 3.8 },
+      { name: "কল্যাণপুর", km: 5.0 },
+      { name: "শ্যামলী", km: 5.4 },
+      { name: "কলেজগেট", km: 6.3 },
+      { name: "আসাদগেট", km: 7.2 },
+      { name: "ফার্মগেট", km: 9.0 },
+      { name: "কাওরানবাজার", km: 10.0 },
+      { name: "শাহবাগ", km: 11.4 },
+      { name: "প্রেসক্লাব", km: 13.1 },
+      { name: "স্টেডিয়াম", km: 14.1 },
+      { name: "ইত্তেফাক", km: 17.2 },
+      { name: "সায়েদাবাদ", km: 18.3 }
+    ],
+    fareTable: {
+      "চিড়িয়াখানা-মিরপুর-১": 10, "চিড়িয়াখানা-শ্যামলী": 15, "চিড়িয়াখানা-ফার্মগেট": 24,
+      "চিড়িয়াখানা-শাহবাগ": 31, "চিড়িয়াখানা-সায়েদাবাদ": 49, "মিরপুর-১-ফার্মগেট": 19,
+      "মিরপুর-১-শাহবাগ": 26, "মিরপুর-১-সায়েদাবাদ": 45, "শ্যামলী-ফার্মগেট": 10,
+      "শ্যামলী-শাহবাগ": 16, "শ্যামলী-সায়েদাবাদ": 35, "ফার্মগেট-শাহবাগ": 10,
+      "ফার্মগেট-সায়েদাবাদ": 25, "শাহবাগ-সায়েদাবাদ": 19
+    }
+  },
+  {
+    id: "A-115",
+    pageNo: 7,
+    routeCode: "এ-১১৫",
+    title: "মিরপুর-১ (বৈশাখী মার্কেট) হতে যাত্রাবাড়ী",
+    via: "টেকনিক্যাল, শ্যামলী, শুক্রাবাদ, কলাবাগান, সায়েন্সল্যাব, শাহবাগ, প্রেসক্লাব, গুলিস্তান",
+    totalKm: 17.6,
+    buses: ["বৈশাখী পরিবহন", "লাব্বাইক পরিবহন", "বাহন পরিবহন"],
+    stops: [
+      { name: "মিরপুর-১", km: 0.0 },
+      { name: "টেকনিক্যাল", km: 2.2 },
+      { name: "কল্যাণপুর", km: 3.2 },
+      { name: "শ্যামলী", km: 3.9 },
+      { name: "কলেজগেইট", km: 4.6 },
+      { name: "শুক্রাবাদ", km: 6.8 },
+      { name: "কলাবাগান", km: 7.4 },
+      { name: "সায়েন্সল্যাব", km: 8.4 },
+      { name: "শাহবাগ", km: 9.7 },
+      { name: "প্রেসক্লাব", km: 11.5 },
+      { name: "গুলিস্তান মোড়", km: 12.5 },
+      { name: "বাংলাদেশ ব্যাংক", km: 13.8 },
+      { name: "যাত্রাবাড়ী", km: 17.6 }
+    ],
+    fareTable: {
+      "মিরপুর-১-শ্যামলী": 10, "মিরপুর-১-কলাবাগান": 20, "মিরপুর-১-সায়েন্সল্যাব": 23,
+      "মিরপুর-১-শাহবাগ": 26, "মিরপুর-১-গুলিস্তান মোড়": 34, "মিরপুর-১-যাত্রাবাড়ী": 48,
+      "শ্যামলী-কলাবাগান": 10, "শ্যামলী-সায়েন্সল্যাব": 12, "শ্যামলী-শাহবাগ": 16,
+      "শ্যামলী-যাত্রাবাড়ী": 37, "সায়েন্সল্যাব-শাহবাগ": 10, "সায়েন্সল্যাব-গুলিস্তান মোড়": 11,
+      "সায়েন্সল্যাব-যাত্রাবাড়ী": 25, "শাহবাগ-যাত্রাবাড়ী": 21, "গুলিস্তান মোড়-যাত্রাবাড়ী": 14
+    }
+  },
+  {
+    id: "A-127",
+    pageNo: 10,
+    routeCode: "এ-১২৭",
+    title: "মিরপুর মাজার রোড হতে আজিমপুর",
+    via: "মিরপুর-১, শ্যামলী, আসাদগেট, কলাবাগান, সায়েন্সল্যাব, নিউমার্কেট, নীলক্ষেত",
+    totalKm: 12.0,
+    buses: ["রজনীগন্ধা পরিবহন", "মিরপুর মেট্রো সার্ভিস"],
+    stops: [
+      { name: "মিরপুর মাজার রোড", km: 0.0 },
+      { name: "মিরপুর-১", km: 1.0 },
+      { name: "শ্যামলী", km: 4.6 },
+      { name: "আসাদগেট", km: 6.6 },
+      { name: "রাসেল স্কয়ার", km: 8.6 },
+      { name: "কলাবাগান", km: 9.0 },
+      { name: "সায়েন্সল্যাব", km: 10.0 },
+      { name: "নিউমার্কেট", km: 10.6 },
+      { name: "নীলক্ষেত", km: 10.8 },
+      { name: "আজিমপুর", km: 12.0 }
+    ],
+    fareTable: {
+      "মিরপুর মাজার রোড-মিরপুর-১": 10, "মিরপুর মাজার রোড-শ্যামলী": 12, "মিরপুর মাজার রোড-আসাদগেট": 18,
+      "মিরপুর মাজার রোড-সায়েন্সল্যাব": 27, "মিরপুর মাজার রোড-নিউমার্কেট": 29, "মিরপুর মাজার রোড-আজিমপুর": 32,
+      "মিরপুর-১-আসাদগেট": 15, "মিরপুর-১-সায়েন্সল্যাব": 24, "মিরপুর-১-আজিমপুর": 30,
+      "শ্যামলী-সায়েন্সল্যাব": 15, "শ্যামলী-আজিমপুর": 20, "আসাদগেট-আজিমপুর": 15,
+      "সায়েন্সল্যাব-আজিমপুর": 10
+    }
+  },
+  {
+    id: "A-138",
+    pageNo: 15,
+    routeCode: "এ-১৩৮",
+    title: "উত্তরা (রাণীগঞ্জ) হতে সদরঘাট",
+    via: "নতুন বাজার, রামপুরা টিভি সেন্টার, মালিবাগ, কাকরাইল, ভিক্টোরিয়া পার্ক",
+    totalKm: 23.3,
+    buses: ["ভিক্টর ক্লাসিক", "সুপ্রভাত স্পেশাল", "আকাশ পরিবহন"],
+    stops: [
+      { name: "উত্তরা (রাণীগঞ্জ)", km: 0.0 },
+      { name: "নতুন বাজার", km: 11.8 },
+      { name: "রামপুরা টিভি সেন্টার", km: 15.2 },
+      { name: "মালিবাগ", km: 18.5 },
+      { name: "কাকরাইল", km: 19.3 },
+      { name: "বঙ্গবন্ধু এভিনিউ", km: 21.0 },
+      { name: "ভিক্টোরিয়া পার্ক", km: 23.3 }
+    ],
+    fareTable: {
+      "উত্তরা (রাণীগঞ্জ)-নতুন বাজার": 32, "উত্তরা (রাণীগঞ্জ)-রামপুরা টিভি সেন্টার": 41,
+      "উত্তরা (রাণীগঞ্জ)-মালিবাগ": 50, "উত্তরা (রাণীগঞ্জ)-কাকরাইল": 52,
+      "উত্তরা (রাণীগঞ্জ)-ভিক্টোরিয়া পার্ক": 63, "নতুন বাজার-রামপুরা টিভি সেন্টার": 10,
+      "নতুন বাজার-মালিবাগ": 18, "নতুন বাজার-ভিক্টোরিয়া পার্ক": 31,
+      "রামপুরা টিভি সেন্টার-ভিক্টোরিয়া পার্ক": 22, "মালিবাগ-ভিক্টোরিয়া পার্ক": 13
+    }
+  },
+  {
+    id: "A-166",
+    pageNo: 27,
+    routeCode: "এ-১৬৬",
+    title: "মোহাম্মদপুর হতে উত্তরা হাউজ বিল্ডিং",
+    via: "আসাদগেট, ফার্মগেট, মহাখালী, গুলশান-১, বাড্ডা, নতুন বাজার, কুড়িল, এয়ারপোর্ট, রাজলক্ষ্মী",
+    totalKm: 20.5,
+    buses: ["প্রজাপতি পরিবহন", "পরিস্থান পরিবহন", "রইস পরিবহন"],
+    stops: [
+      { name: "মোহাম্মদপুর", km: 0.0 },
+      { name: "টাউন হল", km: 1.4 },
+      { name: "আসাদগেট", km: 2.4 },
+      { name: "ফার্মগেট", km: 3.9 },
+      { name: "মহাখালী", km: 7.0 },
+      { name: "তিতুমীর কলেজ", km: 7.8 },
+      { name: "গুলশান-১", km: 8.8 },
+      { name: "মধ্য বাড্ডা", km: 9.7 },
+      { name: "নতুন বাজার", km: 11.1 },
+      { name: "বসুন্ধরা", km: 13.0 },
+      { name: "কুড়িল বিশ্বরোড", km: 14.1 },
+      { name: "খিলক্ষেত", km: 14.6 },
+      { name: "নিউ এয়ারপোর্ট", km: 17.2 },
+      { name: "রাজলক্ষ্মী", km: 18.7 },
+      { name: "হাউজ বিল্ডিং", km: 20.5 }
+    ],
+    fareTable: {
+      "মোহাম্মদপুর-ফার্মগেট": 11, "মোহাম্মদপুর-মহাখালী": 19, "মোহাম্মদপুর-গুলশান-১": 24,
+      "মোহাম্মদপুর-নতুন বাজার": 30, "মোহাম্মদপুর-কুড়িল বিশ্বরোড": 38, "মোহাম্মদপুর-নিউ এয়ারপোর্ট": 46,
+      "মোহাম্মদপুর-হাউজ বিল্ডিং": 55, "ফার্মগেট-মহাখালী": 10, "ফার্মগেট-নতুন বাজার": 19,
+      "ফার্মগেট-কুড়িল বিশ্বরোড": 28, "ফার্মগেট-হাউজ বিল্ডিং": 45, "মহাখালী-নতুন বাজার": 11,
+      "মহাখালী-কুড়িল বিশ্বরোড": 19, "মহাখালী-হাউজ বিল্ডিং": 36, "নতুন বাজার-কুড়িল বিশ্বরোড": 10,
+      "নতুন বাজার-হাউজ বিল্ডিং": 25, "কুড়িল বিশ্বরোড-হাউজ বিল্ডিং": 17
+    }
+  },
+  {
+    id: "A-270",
+    pageNo: 55,
+    routeCode: "এ-২৭০",
+    title: "বসিলা হতে কামারপাড়া",
+    via: "শ্যামলী, টেকনিক্যাল, মিরপুর-১, মিরপুর-১০, পুরবী, কালশী, এয়ারপোর্ট, আব্দুল্লাহপুর",
+    totalKm: 29.2,
+    buses: ["প্রজাপতি পরিবহন", "স্বাধীন পরিবহন", "আলিফ পরিবহন"],
+    stops: [
+      { name: "বসিলা", km: 0.0 },
+      { name: "আসাদ এভিনিউ", km: 3.0 },
+      { name: "শ্যামলী", km: 4.8 },
+      { name: "কল্যাণপুর", km: 5.1 },
+      { name: "টেকনিক্যাল", km: 6.0 },
+      { name: "মিরপুর-১", km: 8.5 },
+      { name: "মিরপুর-২", km: 9.8 },
+      { name: "মিরপুর-১০", km: 10.3 },
+      { name: "মিরপুর-১১", km: 11.3 },
+      { name: "পুরবী", km: 11.8 },
+      { name: "কালশী", km: 15.0 },
+      { name: "শেওড়া বাজার", km: 19.4 },
+      { name: "এয়ারপোর্ট", km: 23.4 },
+      { name: "জসীমউদ্দীন", km: 24.6 },
+      { name: "আব্দুল্লাহপুর", km: 27.1 },
+      { name: "কামারপাড়া", km: 29.2 }
+    ],
+    fareTable: {
+      "বসিলা-শ্যামলী": 13, "বসিলা-মিরপুর-১": 23, "বসিলা-মিরপুর-১০": 28, "বসিলা-কালশী": 41,
+      "বসিলা-এয়ারপোর্ট": 63, "বসিলা-আব্দুল্লাহপুর": 73, "বসিলা-কামারপাড়া": 79,
+      "শ্যামলী-মিরপুর-১": 10, "শ্যামলী-মিরপুর-১০": 15, "শ্যামলী-কামারপাড়া": 66,
+      "মিরপুর-১-কালশী": 18, "মিরপুর-১-এয়ারপোর্ট": 40, "মিরপুর-১-কামারপাড়া": 56,
+      "মিরপুর-১০-কালশী": 13, "মিরপুর-১০-এয়ারপোর্ট": 35, "মিরপুর-১০-কামারপাড়া": 51,
+      "কালশী-এয়ারপোর্ট": 23, "কালশী-কামারপাড়া": 38, "এয়ারপোর্ট-কামারপাড়া": 16
+    }
+  },
+  {
+    id: "A-317",
+    pageNo: 72,
+    routeCode: "এ-৩১৭",
+    title: "দিয়াবাড়ী হতে পোস্তগোলা",
+    via: "এয়ারপোর্ট, কুড়িল ফ্লাইওভার, নতুন বাজার, বাড্ডা, রামপুরা, সায়েদাবাদ, যাত্রাবাড়ী",
+    totalKm: 27.3,
+    buses: ["রাইদা এন্টারপ্রাইজ", "অনাবিল সুপার"],
+    stops: [
+      { name: "দিয়াবাড়ী চৌরাস্তা", km: 0.0 },
+      { name: "মাস্কট প্লাজা", km: 2.5 },
+      { name: "এয়ারপোর্ট", km: 4.5 },
+      { name: "কুড়িল ফ্লাইওভার", km: 8.5 },
+      { name: "নতুন বাজার", km: 12.1 },
+      { name: "বাড্ডা", km: 14.6 },
+      { name: "রামপুরা", km: 16.7 },
+      { name: "খিলগাঁও ফ্লাইওভার", km: 20.7 },
+      { name: "টিটিপাড়া", km: 22.4 },
+      { name: "সায়েদাবাদ", km: 23.4 },
+      { name: "যাত্রাবাড়ী", km: 24.8 },
+      { name: "পোস্তগোলা", km: 27.3 }
+    ],
+    fareTable: {
+      "দিয়াবাড়ী চৌরাস্তা-এয়ারপোর্ট": 12, "দিয়াবাড়ী চৌরাস্তা-কুড়িল ফ্লাইওভার": 23,
+      "দিয়াবাড়ী চৌরাস্তা-নতুন বাজার": 33, "দিয়াবাড়ী চৌরাস্তা-রামপুরা": 45,
+      "দিয়াবাড়ী চৌরাস্তা-সায়েদাবাদ": 63, "দিয়াবাড়ী চৌরাস্তা-যাত্রাবাড়ী": 67,
+      "দিয়াবাড়ী চৌরাস্তা-পোস্তগোলা": 74, "এয়ারপোর্ট-নতুন বাজার": 21,
+      "এয়ারপোর্ট-রামপুরা": 33, "এয়ারপোর্ট-পোস্তগোলা": 62, "কুড়িল ফ্লাইওভার-রামপুরা": 22,
+      "কুড়িল ফ্লাইওভার-যাত্রাবাড়ী": 44, "নতুন বাজার-সায়েদাবাদ": 31,
+      "রামপুরা-যাত্রাবাড়ী": 22, "সায়েদাবাদ-পোস্তগোলা": 11
+    }
+  },
+  {
+    id: "A-458",
+    pageNo: 115,
+    routeCode: "এ-৪৫৮",
+    title: "মিরপুর-১২ হতে মতিঝিল",
+    via: "মিরপুর-১১, মিরপুর-১০, কাজীপাড়া, শেওড়াপাড়া, বিজয় সরণী, ফার্মগেট, শাহবাগ, প্রেসক্লাব, গুলিস্তান",
+    totalKm: 15.3,
+    buses: ["বিকল্প অটো সার্ভিস", "শিকড় পরিবহন", "খাজা বাবা পরিবহন"],
+    stops: [
+      { name: "মিরপুর-১২", km: 0.0 },
+      { name: "মিরপুর-১১", km: 1.1 },
+      { name: "মিরপুর-১০", km: 2.5 },
+      { name: "কাজীপাড়া", km: 3.7 },
+      { name: "শেওড়াপাড়া", km: 4.5 },
+      { name: "বিজয় সরণী", km: 8.0 },
+      { name: "ফার্মগেট", km: 8.7 },
+      { name: "শাহবাগ", km: 10.8 },
+      { name: "প্রেসক্লাব", km: 12.8 },
+      { name: "গুলিস্তান", km: 13.6 },
+      { name: "মতিঝিল", km: 15.3 }
+    ],
+    fareTable: {
+      "মিরপুর-১২-মিরপুর-১০": 10, "মিরপুর-১২-বিজয় সরণী": 22, "মিরপুর-১২-ফার্মগেট": 23,
+      "মিরপুর-১২-শাহবাগ": 29, "মিরপুর-১২-প্রেসক্লাব": 35, "মিরপুর-১২-গুলিস্তান": 37,
+      "মিরপুর-১২-মতিঝিল": 41, "মিরপুর-১০-ফার্মগেট": 17, "মিরপুর-১০-শাহবাগ": 23,
+      "মিরপুর-১০-প্রেসক্লাব": 28, "মিরপুর-১০-গুলিস্তান": 30, "মিরপুর-১০-মতিঝিল": 35,
+      "ফার্মগেট-শাহবাগ": 10, "ফার্মগেট-গুলিস্তান": 13, "ফার্মগেট-মতিঝিল": 18,
+      "শাহবাগ-মতিঝিল": 12, "প্রেসক্লাব-মতিঝিল": 10, "গুলিস্তান-মতিঝিল": 10
+    }
+  },
+  {
+    id: "A-459",
+    pageNo: 116,
+    routeCode: "এ-৪৫৯",
+    title: "মানিকদি (ইসিবি মোড়) হতে আজিমপুর",
+    via: "কালশী, মিরপুর-১১, মিরপুর-১০, কাজীপাড়া, শেওড়াপাড়া, আগারগাঁও, শিশুমেলা, কলেজ গেইট, নিউমার্কেট",
+    totalKm: 15.3,
+    buses: ["বিকাশ পরিবহন", "মিরপুর ইউনাইটেড সার্ভিস"],
+    stops: [
+      { name: "মানিকদি (ইসিবি মোড়)", km: 0.0 },
+      { name: "কালশী", km: 1.1 },
+      { name: "মিরপুর-১১", km: 3.1 },
+      { name: "মিরপুর-১০", km: 4.2 },
+      { name: "কাজীপাড়া", km: 5.3 },
+      { name: "শেওড়াপাড়া", km: 6.2 },
+      { name: "আগারগাঁও", km: 7.8 },
+      { name: "শিশুমেলা", km: 8.9 },
+      { name: "কলেজ গেইট", km: 9.8 },
+      { name: "শুক্রাবাদ", km: 11.9 },
+      { name: "নিউমার্কেট", km: 14.1 },
+      { name: "আজিমপুর", km: 15.3 }
+    ],
+    fareTable: {
+      "মানিকদি (ইসিবি মোড়)-কালশী": 10, "মানিকদি (ইসিবি মোড়)-মিরপুর-১০": 11,
+      "মানিকদি (ইসিবি মোড়)-আগারগাঁও": 21, "মানিকদি (ইসিবি মোড়)-শিশুমেলা": 25,
+      "মানিকদি (ইসিবি মোড়)-কলেজ গেইট": 26, "মানিকদি (ইসিবি মোড়)-শুক্রাবাদ": 32,
+      "মানিকদি (ইসিবি মোড়)-নিউমার্কেট": 38, "মানিকদি (ইসিবি মোড়)-আজিমপুর": 41,
+      "মিরপুর-১০-আগারগাঁও": 10, "মিরপুর-১০-শিশুমেলা": 13, "মিরপুর-১০-নিউমার্কেট": 27,
+      "মিরপুর-১০-আজিমপুর": 30, "আগারগাঁও-আজিমপুর": 20, "শিশুমেলা-আজিমপুর": 17,
+      "কলেজ গেইট-আজিমপুর": 15, "নিউমার্কেট-আজিমপুর": 10
+    }
+  }
+];

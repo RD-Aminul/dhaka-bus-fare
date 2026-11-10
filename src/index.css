@@ -1,0 +1,46 @@
+@import url('https://fonts.googleapis.com/css2?family=Hind+Siliguri:wght@400;500;600;700&family=Noto+Sans+Bengali:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Hind Siliguri', 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', 'SolaimanLipi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+html, body {
+  font-family: 'Hind Siliguri', 'Noto Sans Bengali', 'Nirmala UI', 'Kalpurush', 'SolaimanLipi', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-tap-highlight-color: transparent;
+  background-color: #f8fafc;
+  color: #1e293b;
+}
+
+/* Ensure form controls and tables inherit the exact Bengali font */
+input, button, select, textarea, table, th, td {
+  font-family: inherit;
+  word-break: keep-all;
+}
+
+/* Prevent accidental word splitting in buttons, badges, and headers */
+button, .badge, th {
+  word-break: keep-all;
+  white-space: normal;
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
